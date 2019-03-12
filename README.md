@@ -1,4 +1,5 @@
 # sm-translate
+## Plugin written by Larry.
 SourceMod plugin for automatically translating chat messages in Team Fortress 2, using Google's Cloud Translation API.
 
 ## Required extensions
