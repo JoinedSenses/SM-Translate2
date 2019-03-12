@@ -378,148 +378,147 @@ public void TranslateToChat(char[] originalMessage, int sender) {
 }
 
 public void TranslateCallback(bool success, const char[] error, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method) {
-	if (success) {
-		int client = request.Any;
-		// DISGUSTING YET FUNCTIONAL CODE
+	if (!success) {
+		ThrowError("HTTP Request Failed \n%s", error);
+	}
 
-		int arraySize = response.ContentLength + 1;
+	int client = request.Any;
+	// DISGUSTING YET FUNCTIONAL CODE
 
-		char[] content = new char[arraySize];
-		response.GetContent(content, arraySize);
+	int arraySize = response.ContentLength + 1;
 
-		// The whole JSON object
-		Handle hObj = json_load(content);
-		if (hObj == null || !json_is_object(hObj)) {
-			delete hObj;
+	char[] content = new char[arraySize];
+	response.GetContent(content, arraySize);
 
-			if (g_cvarDebugLog.BoolValue) {
-				LogError("response: \n%s", content);
-			}
-
-			ThrowError("Couldn't Parse JSON");
-		}
-		char temp[1024];
-		if (g_cvarDebugLog.BoolValue) {
-			json_dump(hObj, temp, 1024);
-		}
-
-		// Data object
-		Handle hObj2 = json_object_get(hObj, "data");
-		if (hObj2 == null || !json_is_object(hObj2)) {
-			delete hObj2;
-
-			if (g_cvarDebugLog.BoolValue) {
-				LogError("hObj: \n%s", temp);
-			}
-
-			ThrowError("Couldn't Parse JSON");
-		}
-		if (g_cvarDebugLog.BoolValue) {
-			json_dump(hObj2, temp, 1024);
-		}
-
+	// The whole JSON object
+	Handle hObj = json_load(content);
+	if (hObj == null || !json_is_object(hObj)) {
 		delete hObj;
 
-		// Translations array
-		Handle hArray = json_object_get(hObj2, "translations");
-		if (hArray == null || !json_is_array(hArray)) {
-			delete hArray;
-
-			if (g_cvarDebugLog.BoolValue) {
-				LogError("hObj2: \n%s", temp);
-			}
-
-			ThrowError("Couldn't Parse JSON");
-		}
 		if (g_cvarDebugLog.BoolValue) {
-			json_dump(hArray, temp, 1024);
+			LogError("response: \n%s", content);
 		}
 
+		ThrowError("Couldn't Parse JSON");
+	}
+	char temp[1024];
+	if (g_cvarDebugLog.BoolValue) {
+		json_dump(hObj, temp, 1024);
+	}
+
+	// Data object
+	Handle hObj2 = json_object_get(hObj, "data");
+	if (hObj2 == null || !json_is_object(hObj2)) {
 		delete hObj2;
 
-		// Make translations array into an object
-		Handle hArrayContent = json_array_get(hArray, 0);
-		if (hArrayContent == null || !json_is_object(hArrayContent)) {
-			delete hArrayContent;
-
-			if (g_cvarDebugLog.BoolValue) {
-				LogError("hArray: \n%s", temp);
-			}
-
-			ThrowError("Couldn't Parse JSON");
+		if (g_cvarDebugLog.BoolValue) {
+			LogError("hObj: \n%s", temp);
 		}
 
+		ThrowError("Couldn't Parse JSON");
+	}
+	if (g_cvarDebugLog.BoolValue) {
+		json_dump(hObj2, temp, 1024);
+	}
+
+	delete hObj;
+
+	// Translations array
+	Handle hArray = json_object_get(hObj2, "translations");
+	if (hArray == null || !json_is_array(hArray)) {
 		delete hArray;
 
-		// Get value from translations object
-		char[] buffer = new char[arraySize];
-		json_object_get_string(hArrayContent, "translatedText", buffer, arraySize);
+		if (g_cvarDebugLog.BoolValue) {
+			LogError("hObj2: \n%s", temp);
+		}
 
-		char[] sourceLangBuffer = new char[arraySize];
-		json_object_get_string(hArrayContent, "detectedSourceLanguage", sourceLangBuffer, arraySize);
+		ThrowError("Couldn't Parse JSON");
+	}
+	if (g_cvarDebugLog.BoolValue) {
+		json_dump(hArray, temp, 1024);
+	}
+
+	delete hObj2;
+
+	// Make translations array into an object
+	Handle hArrayContent = json_array_get(hArray, 0);
+	if (hArrayContent == null || !json_is_object(hArrayContent)) {
 		delete hArrayContent;
 
-		// Remove escape chars
-		ReplaceString(buffer, arraySize, "&#39;", "\'", false);
-		ReplaceString(buffer, arraySize, "\\\\", "\\", false);
-
-		request.GetData(content, arraySize);
-		ReplaceString(content, arraySize, "\'", "\"", false);
-
-		// The whole JSON object
-		Handle hObj3 = json_load(content);
-		if (hObj3 == null || !json_is_object(hObj3)) {
-			delete hObj3;
-
-			if (g_cvarDebugLog.BoolValue) {
-				LogError("request: \n%s", content);
-			}
-
-			ThrowError("Couldn't Parse JSON");
+		if (g_cvarDebugLog.BoolValue) {
+			LogError("hArray: \n%s", temp);
 		}
 
-		char[] targetLang = new char[5];
-		json_object_get_string(hObj3, "target", targetLang, 5);
-		TrimString(targetLang);
+		ThrowError("Couldn't Parse JSON");
+	}
+
+	delete hArray;
+
+	// Get value from translations object
+	char[] buffer = new char[arraySize];
+	json_object_get_string(hArrayContent, "translatedText", buffer, arraySize);
+
+	char[] sourceLangBuffer = new char[arraySize];
+	json_object_get_string(hArrayContent, "detectedSourceLanguage", sourceLangBuffer, arraySize);
+	delete hArrayContent;
+
+	// Remove escape chars
+	ReplaceString(buffer, arraySize, "&#39;", "\'", false);
+	ReplaceString(buffer, arraySize, "\\\\", "\\", false);
+
+	request.GetData(content, arraySize);
+	ReplaceString(content, arraySize, "\'", "\"", false);
+
+	// The whole JSON object
+	Handle hObj3 = json_load(content);
+	if (hObj3 == null || !json_is_object(hObj3)) {
 		delete hObj3;
 
-		for (int i = 1; i <= MaxClients; i++) {
-			if (!IsClientInGame(i)) {
-				continue;
-			}
-
-			if (strcmp(targetLang, g_cLanguageCodes[g_iClientTargetLanguage[i]], false) != 0) {
-				continue;
-			}
-
-			// Don't translate from clients target language
-			if (strcmp(sourceLangBuffer, g_cLanguageCodes[g_iClientTargetLanguage[i]], false) == 0) {
-				continue;
-			}
-
-			// Don't translate clients own messages
-			if (i == client && !g_cvarDebugLog.BoolValue) {
-				continue;
-			}
-
-			// Check wanted source languages
-			bool cont = false;
-			for (int e = 0; e < sizeof(g_cLanguages); e++) {
-				if (!g_bClientSourceLanguages[i][e]
-				&& (strcmp(sourceLangBuffer, g_cLanguageCodes[e], false) == 0)) {
-					cont = true;
-				}
-			}
-			if (cont) {
-				continue;
-			}
-
-			char name[64];
-			GetClientName(client, name, sizeof(name));
-			CPrintToChat(i, "%s (%s > %s) %s: %s", g_cChatPrefix, sourceLangBuffer, g_cLanguageCodes[g_iClientTargetLanguage[i]], name, buffer);
+		if (g_cvarDebugLog.BoolValue) {
+			LogError("request: \n%s", content);
 		}
+
+		ThrowError("Couldn't Parse JSON");
 	}
-	else {
-		ThrowError("HTTP Request Failed \n%s", error);
+
+	char[] targetLang = new char[5];
+	json_object_get_string(hObj3, "target", targetLang, 5);
+	TrimString(targetLang);
+	delete hObj3;
+
+	for (int i = 1; i <= MaxClients; i++) {
+		if (!IsClientInGame(i)) {
+			continue;
+		}
+
+		if (strcmp(targetLang, g_cLanguageCodes[g_iClientTargetLanguage[i]], false) != 0) {
+			continue;
+		}
+
+		// Don't translate from clients target language
+		if (strcmp(sourceLangBuffer, g_cLanguageCodes[g_iClientTargetLanguage[i]], false) == 0) {
+			continue;
+		}
+
+		// Don't translate clients own messages
+		if (i == client && !g_cvarDebugLog.BoolValue) {
+			continue;
+		}
+
+		// Check wanted source languages
+		bool cont = false;
+		for (int e = 0; e < sizeof(g_cLanguages); e++) {
+			if (!g_bClientSourceLanguages[i][e]
+			&& (strcmp(sourceLangBuffer, g_cLanguageCodes[e], false) == 0)) {
+				cont = true;
+			}
+		}
+		if (cont) {
+			continue;
+		}
+
+		char name[64];
+		GetClientName(client, name, sizeof(name));
+		CPrintToChat(i, "%s (%s > %s) %s: %s", g_cChatPrefix, sourceLangBuffer, g_cLanguageCodes[g_iClientTargetLanguage[i]], name, buffer);
 	}
 } 
