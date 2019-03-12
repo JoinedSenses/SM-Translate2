@@ -84,7 +84,6 @@ int g_iMaxLoadAttempts = 5;
 int g_iLoadAttempts;
 
 ConVar g_cvarDebugLog;
-bool g_bDebugLog;
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	g_bLateLoad = late;
@@ -96,7 +95,6 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_lmenu", Command_ShowLanguageMenu, "Opens language settings menu");
 
 	g_cvarDebugLog = CreateConVar("translate_debug", "0", "Enables debug logging", _, true, 0.0, true, 1.0);
-	g_cvarDebugLog.AddChangeHook(ConVar_Debug_Change);
 
 	g_hTargetPrefs = RegClientCookie("target_prefs", "Target language cookies", CookieAccess_Protected);
 	g_hSourcePrefs = RegClientCookie("source_prefs", "Source language cookies", CookieAccess_Protected);
@@ -130,10 +128,6 @@ public void OnPluginStart() {
 			CreateTimer(1.0, Timer_LoadClientCookies, i, TIMER_REPEAT);
 		}
 	}
-}
-
-public void ConVar_Debug_Change(ConVar convar, const char[] oldValue, const char[] newValue) {
-	g_bDebugLog = g_cvarDebugLog.BoolValue;
 }
 
 public void OnClientConnected(int client) {
@@ -398,14 +392,14 @@ public void TranslateCallback(bool success, const char[] error, System2HTTPReque
 		if (hObj == null || !json_is_object(hObj)) {
 			delete hObj;
 
-			if (g_bDebugLog) {
-				PrintToServer("response: \n%s", content);
+			if (g_cvarDebugLog.BoolValue) {
+				LogError("response: \n%s", content);
 			}
 
 			ThrowError("Couldn't Parse JSON");
 		}
 		char temp[1024];
-		if (g_bDebugLog) {
+		if (g_cvarDebugLog.BoolValue) {
 			json_dump(hObj, temp, 1024);
 		}
 
@@ -414,13 +408,13 @@ public void TranslateCallback(bool success, const char[] error, System2HTTPReque
 		if (hObj2 == null || !json_is_object(hObj2)) {
 			delete hObj2;
 
-			if (g_bDebugLog) {
-				PrintToServer("hObj: \n%s", temp);
+			if (g_cvarDebugLog.BoolValue) {
+				LogError("hObj: \n%s", temp);
 			}
 
 			ThrowError("Couldn't Parse JSON");
 		}
-		if (g_bDebugLog) {
+		if (g_cvarDebugLog.BoolValue) {
 			json_dump(hObj2, temp, 1024);
 		}
 
@@ -431,13 +425,13 @@ public void TranslateCallback(bool success, const char[] error, System2HTTPReque
 		if (hArray == null || !json_is_array(hArray)) {
 			delete hArray;
 
-			if (g_bDebugLog) {
-				PrintToServer("hObj2: \n%s", temp);
+			if (g_cvarDebugLog.BoolValue) {
+				LogError("hObj2: \n%s", temp);
 			}
 
 			ThrowError("Couldn't Parse JSON");
 		}
-		if (g_bDebugLog) {
+		if (g_cvarDebugLog.BoolValue) {
 			json_dump(hArray, temp, 1024);
 		}
 
@@ -448,8 +442,8 @@ public void TranslateCallback(bool success, const char[] error, System2HTTPReque
 		if (hArrayContent == null || !json_is_object(hArrayContent)) {
 			delete hArrayContent;
 
-			if (g_bDebugLog) {
-				PrintToServer("hArray: \n%s", temp);
+			if (g_cvarDebugLog.BoolValue) {
+				LogError("hArray: \n%s", temp);
 			}
 
 			ThrowError("Couldn't Parse JSON");
@@ -477,8 +471,8 @@ public void TranslateCallback(bool success, const char[] error, System2HTTPReque
 		if (hObj3 == null || !json_is_object(hObj3)) {
 			delete hObj3;
 
-			if (g_bDebugLog) {
-				PrintToServer("request: \n%s", content);
+			if (g_cvarDebugLog.BoolValue) {
+				LogError("request: \n%s", content);
 			}
 
 			ThrowError("Couldn't Parse JSON");
@@ -504,7 +498,7 @@ public void TranslateCallback(bool success, const char[] error, System2HTTPReque
 			}
 
 			// Don't translate clients own messages
-			if (i == client && !g_bDebugLog) {
+			if (i == client && !g_cvarDebugLog.BoolValue) {
 				continue;
 			}
 
